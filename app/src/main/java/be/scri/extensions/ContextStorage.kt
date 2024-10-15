@@ -185,7 +185,16 @@ fun Context.needsStupidWritePermissions(path: String) = !isRPlus() && (isPathOnS
 
 fun Context.isSDCardSetAsDefaultStorage() = sdCardPath.isNotEmpty() && Environment.getExternalStorageDirectory().absolutePath.equals(sdCardPath, true)
 
-fun Context.hasProperStoredTreeUri(isOTG: Boolean): Boolean {
+/**
+ * Check if permissions exist to access stored tree URI for SD or OTG.
+ *
+ * Reset baseConfig tree URI to empty string if no permissions exist.
+ *
+ * @param isOTG - true if checking OTG tree URI
+ *
+ * @return if the initial base config state URI permissions exist(ed).
+ */
+fun Context.checkHasAccessResetStoredTreeUri(isOTG: Boolean): Boolean {
     val uri = if (isOTG) baseConfig.otgTreeUri else baseConfig.sdTreeUri
     val hasProperUri = contentResolver.persistedUriPermissions.any { it.uri.toString() == uri }
     if (!hasProperUri) {

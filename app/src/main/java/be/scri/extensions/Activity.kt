@@ -160,7 +160,10 @@ fun Activity.isAppInstalledOnSDCard(): Boolean =
     }
 
 fun BaseSimpleActivity.isShowingSAFDialog(path: String): Boolean {
-    return if ((!isRPlus() && isPathOnSD(path) && !isSDCardSetAsDefaultStorage() && (baseConfig.sdTreeUri.isEmpty() || !hasProperStoredTreeUri(false)))) {
+    val hasStoreSdPermissions = baseConfig.sdTreeUri.isNotEmpty() && checkHasAccessResetStoredTreeUri(false)
+    val canUseSd = isRPlus() || !isPathOnSD(path) || isSDCardSetAsDefaultStorage()
+
+    return if (!canUseSd && !hasStoreSdPermissions) {
         runOnUiThread {
             if (!isDestroyed && !isFinishing) {
                 WritePermissionDialog(this, Mode.SdCard) {
@@ -302,13 +305,17 @@ fun BaseSimpleActivity.isShowingAndroidSAFDialog(path: String): Boolean {
     }
 }
 
-fun BaseSimpleActivity.isShowingOTGDialog(path: String): Boolean =
-    if (!isRPlus() && isPathOnOTG(path) && (baseConfig.otgTreeUri.isEmpty() || !hasProperStoredTreeUri(true))) {
+fun BaseSimpleActivity.isShowingOTGDialog(path: String): Boolean {
+    val hasStoreOtgPermissions = baseConfig.otgTreeUri.isNotEmpty() && checkHasAccessResetStoredTreeUri(true)
+    val canUseOtg = isRPlus() || !isPathOnOTG(path)
+
+    return if (!canUseOtg && !hasStoreOtgPermissions) {
         showOTGPermissionDialog(path)
         true
     } else {
         false
     }
+}
 
 fun BaseSimpleActivity.showOTGPermissionDialog(path: String) {
     runOnUiThread {
@@ -502,7 +509,8 @@ fun Activity.openEditorIntent(
         Intent().apply {
             action = Intent.ACTION_EDIT
             setDataAndType(newUri, getUriMimeType(path, newUri))
-            if (!isRPlus() || (isRPlus() && (hasProperStoredDocumentUriSdk30(path) || Environment.isExternalStorageManager()))) {
+            val isRPlusUri = isRPlus() && (hasProperStoredDocumentUriSdk30(path) || Environment.isExternalStorageManager())
+            if (!isRPlus() || isRPlusUri) {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
             }
 
